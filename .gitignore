@@ -1,0 +1,6 @@
+/bin/
+/pkg/
+/workspace/
+.DS_Store
+.project\
+.vscode
