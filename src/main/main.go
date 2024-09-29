@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"sqlToKV/src/parser"
-	"sqlToKV/src/sql"
 	"strings"
+
+	"sqlToKeyValue/src/parser"
+
+	"sqlToKeyValue/src/sql"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
@@ -88,9 +90,134 @@ var base = `CREATE VIEW (Q5, views) AS
 			ORDER BY
 			LIMIT`
 
+var table = `CREATE AW TABLE Persons (
+			PersonID integer PRIMARY KEY,
+			LastName varchar,
+			FirstName varchar,
+			Address varchar DEFAULT "unknown",
+			City varchar DEFAULT "unknown",
+			NFriends counter DEFAULT 0 CHECK >= 0,
+			HasPhone boolean DEFAULT true,
+			WorkID integer FOREIGN KEY REFERENCES Work (WorkID)
+			)`
+
+var index = `CREATE INDEX CityPersons ON Persons (City)`
+
+var drop = `DROP TABLE Persons`
+var drop2 = `DROP TABLE SomeDifferentName`
+
+var delete = `DELETE FROM Persons WHERE PersonID = 1`
+
+var insert_1 = `INSERT INTO Persons (PersonID, FirstName, LastName, Address, WorkID)
+				VALUES (2, "First", "Last", "Lost address", 3)`
+
+var insert_2 = `INSERT INTO Persons
+				VALUES (1, "LN", "FN", "Somewhere", "Somewhere City", 5, true, 2)`
+
+var update = `UPDATE Persons
+			  SET Address = "Beacon Hill", City = "Kansas City"
+			  WHERE PersonID = 1`
+
+var update2 = `UPDATE Persons
+			   SET Address = "Woahhhhh", City = "Wowwwwww"
+			   WHERE PersonID >= 995 + (1 * 5 + (-10 + 10)) AND PersonID > NFriends * 10 AND FirstName startsWith "A"`
+
+var query = `SELECT FirstName, LastName, City, NFriends
+			 FROM Persons
+			 WHERE PersonID >= 0 AND PersonID <= 10`
+
+var queryAll = `SELECT *
+				FROM Persons
+				WHERE City contains "City"`
+
+//Other Select important clauses not supported atm:
+//Group By, Order By, Limit
+
+func testDrop(sqlCode string) {
+	is := antlr.NewInputStream(sqlCode)
+	lexer := parser.NewViewSQLLexer(is)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parse := parser.NewViewSQLParser(stream)
+	listener := sql.MakeDropTableListener(parse)
+	antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+	ignore(parse)
+}
+
+func testCreateTable(sqlCode string) {
+	is := antlr.NewInputStream(sqlCode)
+	lexer := parser.NewViewSQLLexer(is)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parse := parser.NewViewSQLParser(stream)
+	listener := sql.MakeCreateTableListener(parse)
+	antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+}
+
+func testMultipleListeners(sqlCode string) {
+	is := antlr.NewInputStream(sqlCode)
+	lexer := parser.NewViewSQLLexer(is)
+	firstToken, secondToken := lexer.NextToken(), lexer.NextToken()
+	lexer.SetInputStream(antlr.NewInputStream(sqlCode)) //To reset the lexer
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parse := parser.NewViewSQLParser(stream)
+	switch firstToken.GetText() {
+	case "CREATE":
+		switch secondToken.GetText() {
+		case "VIEW":
+			listener := sql.CreateViewSQLListener(parse)
+			info := sql.ViewInfo{Listen: listener}
+			antlr.ParseTreeWalkerDefault.Walk(info.Listen, parse.Start())
+		case "INDEX":
+			listener := sql.MakeCreateIndexListener(parse)
+			antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+		default: //AW/RW/LWW, so it is a CREATE TABLE
+			listener := sql.MakeCreateTableListener(parse)
+			antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+		}
+	case "DROP":
+		listener := sql.MakeDropTableListener(parse)
+		antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+	case "DELETE":
+		listener := sql.MakeDeleteListener(parse)
+		antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+	case "INSERT":
+		listener := sql.MakeInsertListener(parse)
+		antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+	case "UPDATE":
+		listener := sql.MakeUpdateListener(parse)
+		antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+	case "SELECT":
+		listener := sql.MakeQueryListener(parse)
+		antlr.ParseTreeWalkerDefault.Walk(listener, parse.Start())
+	}
+}
+
+// Done: Drop, CreateTable, Insert, CreateIndex, Update, Delete
+// TODO: View
 func main() {
+	//names := []string{"First insert", "Second insert", "delete", "drop", "drop2", "update", "update2",
+	//"create table", "create index", "view", "query", "query with *"}
+	//texts := []string{insert_1, insert_2, delete, drop, drop2, update, update2, table, index, q3, query, queryAll}
+	//testDrop(drop)
+	//testCreateTable(table)
+	names := []string{"query", "query with *"}
+	texts := []string{query, queryAll}
+	for i, text := range texts {
+		fmt.Println(names[i])
+		testMultipleListeners(text)
+		fmt.Println()
+		fmt.Println()
+	}
 	//start()
 
+	//doViews()
+}
+
+func testListenerType(list parser.ViewSQLListener) {
+
+}
+
+/*
+func doViews() {
 	queries := []string{q3, q5, q11_v1, q11_v2, q14_v1, q14_v2, q15, q18}
 	queriesNames := []string{"Q3", "Q5", "Q11_P1", "Q11_P2", "Q14_P1", "Q14_P2", "Q15", "Q18"}
 
@@ -104,7 +231,7 @@ func main() {
 
 		parse := parser.NewViewSQLParser(stream)
 		listener := sql.CreateViewSQLListener(parse)
-		info := sql.ViewInfo{Listen: &listener}
+		info := sql.ViewInfo{Listen: listener}
 		infos[i] = &info
 
 		//parse.Start: Makes the parser start on start. Could call any other rule of the grammar.
@@ -112,7 +239,6 @@ func main() {
 		antlr.ParseTreeWalkerDefault.Walk(info.Listen, parse.Start())
 
 		//could call parse.toStringTree() to show a parse tree
-		ignore(parse)
 
 		fmt.Printf("***%s***\n", queriesNames[i])
 		viewType := info.GetViewType()
@@ -125,6 +251,7 @@ func main() {
 		info.PrepareInfo()
 		fmt.Println()
 		info.PrintPreparedQuery()
+		return
 
 	}
 	queries = []string{q3, q5, q14_v1, q14_v2, q15}
@@ -174,6 +301,7 @@ func main() {
 		}
 	}
 }
+*/
 
 func mapViewTypeToString(mapType map[string]int) string {
 	var sb strings.Builder

@@ -206,6 +206,102 @@ func (s *BaseViewSQLListener) EnterView(ctx *ViewContext) {}
 // ExitView is called when production view is exited.
 func (s *BaseViewSQLListener) ExitView(ctx *ViewContext) {}
 
+// EnterCheck is called when production check is entered.
+func (s *BaseViewSQLListener) EnterCheck(ctx *CheckContext) {}
+
+// ExitCheck is called when production check is exited.
+func (s *BaseViewSQLListener) ExitCheck(ctx *CheckContext) {}
+
+// EnterForeignkey is called when production foreignkey is entered.
+func (s *BaseViewSQLListener) EnterForeignkey(ctx *ForeignkeyContext) {}
+
+// ExitForeignkey is called when production foreignkey is exited.
+func (s *BaseViewSQLListener) ExitForeignkey(ctx *ForeignkeyContext) {}
+
+// EnterPrimarykey is called when production primarykey is entered.
+func (s *BaseViewSQLListener) EnterPrimarykey(ctx *PrimarykeyContext) {}
+
+// ExitPrimarykey is called when production primarykey is exited.
+func (s *BaseViewSQLListener) ExitPrimarykey(ctx *PrimarykeyContext) {}
+
+// EnterConstraint is called when production constraint is entered.
+func (s *BaseViewSQLListener) EnterConstraint(ctx *ConstraintContext) {}
+
+// ExitConstraint is called when production constraint is exited.
+func (s *BaseViewSQLListener) ExitConstraint(ctx *ConstraintContext) {}
+
+// EnterColumns is called when production columns is entered.
+func (s *BaseViewSQLListener) EnterColumns(ctx *ColumnsContext) {}
+
+// ExitColumns is called when production columns is exited.
+func (s *BaseViewSQLListener) ExitColumns(ctx *ColumnsContext) {}
+
+// EnterCreatetable is called when production createtable is entered.
+func (s *BaseViewSQLListener) EnterCreatetable(ctx *CreatetableContext) {}
+
+// ExitCreatetable is called when production createtable is exited.
+func (s *BaseViewSQLListener) ExitCreatetable(ctx *CreatetableContext) {}
+
+// EnterCreateindex is called when production createindex is entered.
+func (s *BaseViewSQLListener) EnterCreateindex(ctx *CreateindexContext) {}
+
+// ExitCreateindex is called when production createindex is exited.
+func (s *BaseViewSQLListener) ExitCreateindex(ctx *CreateindexContext) {}
+
+// EnterDrop is called when production drop is entered.
+func (s *BaseViewSQLListener) EnterDrop(ctx *DropContext) {}
+
+// ExitDrop is called when production drop is exited.
+func (s *BaseViewSQLListener) ExitDrop(ctx *DropContext) {}
+
+// EnterDelete is called when production delete is entered.
+func (s *BaseViewSQLListener) EnterDelete(ctx *DeleteContext) {}
+
+// ExitDelete is called when production delete is exited.
+func (s *BaseViewSQLListener) ExitDelete(ctx *DeleteContext) {}
+
+// EnterSet is called when production set is entered.
+func (s *BaseViewSQLListener) EnterSet(ctx *SetContext) {}
+
+// ExitSet is called when production set is exited.
+func (s *BaseViewSQLListener) ExitSet(ctx *SetContext) {}
+
+// EnterUpdate is called when production update is entered.
+func (s *BaseViewSQLListener) EnterUpdate(ctx *UpdateContext) {}
+
+// ExitUpdate is called when production update is exited.
+func (s *BaseViewSQLListener) ExitUpdate(ctx *UpdateContext) {}
+
+// EnterValues is called when production values is entered.
+func (s *BaseViewSQLListener) EnterValues(ctx *ValuesContext) {}
+
+// ExitValues is called when production values is exited.
+func (s *BaseViewSQLListener) ExitValues(ctx *ValuesContext) {}
+
+// EnterColumnNames is called when production columnNames is entered.
+func (s *BaseViewSQLListener) EnterColumnNames(ctx *ColumnNamesContext) {}
+
+// ExitColumnNames is called when production columnNames is exited.
+func (s *BaseViewSQLListener) ExitColumnNames(ctx *ColumnNamesContext) {}
+
+// EnterInsert is called when production insert is entered.
+func (s *BaseViewSQLListener) EnterInsert(ctx *InsertContext) {}
+
+// ExitInsert is called when production insert is exited.
+func (s *BaseViewSQLListener) ExitInsert(ctx *InsertContext) {}
+
+// EnterQuery is called when production query is entered.
+func (s *BaseViewSQLListener) EnterQuery(ctx *QueryContext) {}
+
+// ExitQuery is called when production query is exited.
+func (s *BaseViewSQLListener) ExitQuery(ctx *QueryContext) {}
+
+// EnterStatement is called when production statement is entered.
+func (s *BaseViewSQLListener) EnterStatement(ctx *StatementContext) {}
+
+// ExitStatement is called when production statement is exited.
+func (s *BaseViewSQLListener) ExitStatement(ctx *StatementContext) {}
+
 // EnterStart is called when production start is entered.
 func (s *BaseViewSQLListener) EnterStart(ctx *StartContext) {}
 

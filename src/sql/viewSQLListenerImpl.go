@@ -2,10 +2,11 @@ package sql
 
 import (
 	"fmt"
-	"sqlToKV/src/parser"
 	"strconv"
 	"strings"
 	"time"
+
+	"sqlToKeyValue/src/parser"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
@@ -541,8 +542,8 @@ const (
 	FUNCTION  = CondType(20)
 )
 
-func CreateViewSQLListener(parse *parser.ViewSQLParser) MyViewSQLListener {
-	return MyViewSQLListener{Parse: parse, AllNameables: make(map[string]Nameable), AllParameters: make(map[string]Parameter)}
+func CreateViewSQLListener(parse *parser.ViewSQLParser) *MyViewSQLListener {
+	return &MyViewSQLListener{Parse: parse, AllNameables: make(map[string]Nameable), AllParameters: make(map[string]Parameter)}
 }
 
 // VisitTerminal is called when a terminal node is visited.
@@ -619,7 +620,7 @@ func (listen *MyViewSQLListener) ExitNameable(ctx *parser.NameableContext) {
 	//fmt.Println("[Listen]Exit Nameable")
 	parent := ctx.GetParent()
 	if _, ok := parent.(*parser.CalcContext); ok { //Not a nameable inside something else
-		nameable := listen.MakeNameableFromContext(ctx)
+		nameable := listen.FullMakeNameableFromContext(ctx)
 		listen.SelectNameable[nameable.GetIdentifier()] = nameable
 	}
 	if listen.Mode == SELECT {
@@ -639,9 +640,9 @@ func (listen *MyViewSQLListener) ExitValue(ctx *parser.ValueContext) {
 	//fmt.Println("[Listen]Exit Value")
 
 	if nameable := ctx.Nameable(); nameable != nil {
-		listen.currentMath.Stack.Push(listen.MakeNameableFromContext(nameable))
+		listen.currentMath.Stack.Push(listen.FullMakeNameableFromContext(nameable))
 	} else { //Constant
-		constant := listen.makeConstantFromContext(ctx.Constant())
+		constant := MakeConstantFromContext(ctx.Constant())
 		listen.currentMath.Stack.Push(constant)
 	}
 }
@@ -654,7 +655,8 @@ func (listen *MyViewSQLListener) EnterMinus(ctx *parser.MinusContext) {
 // ExitValue is called when production value is exited.
 func (listen *MyViewSQLListener) ExitMinus(ctx *parser.MinusContext) {
 	//fmt.Println("[Listen]Exit Minus")
-	listen.currentMath.Stack.Push(&Minus{ToCalculate: listen.currentMath.Stack.Pop()})
+	//listen.currentMath.Stack.Push(&Minus{ToCalculate: listen.currentMath.Stack.Pop()})
+	MinusHelper(ctx, listen.currentMath)
 }
 
 // EnterValue is called when production value is entered.
@@ -665,12 +667,13 @@ func (listen *MyViewSQLListener) EnterMultOrDiv(ctx *parser.MultOrDivContext) {
 // ExitValue is called when production value is exited.
 func (listen *MyViewSQLListener) ExitMultOrDiv(ctx *parser.MultOrDivContext) {
 	//fmt.Println("[Listen]Exit MultOrDiv")
-	right, left := listen.currentMath.Stack.Pop(), listen.currentMath.Stack.Pop()
+	/*right, left := listen.currentMath.Stack.Pop(), listen.currentMath.Stack.Pop()
 	if ctx.GetOpType().GetText() == "*" {
 		listen.currentMath.Stack.Push(&Mult{Left: left, Right: right})
 	} else {
 		listen.currentMath.Stack.Push(&Div{Left: left, Right: right})
-	}
+	}*/
+	MultOrDivHelper(ctx, listen.currentMath)
 }
 
 // EnterValue is called when production value is entered.
@@ -681,12 +684,14 @@ func (listen *MyViewSQLListener) EnterAddOrSub(ctx *parser.AddOrSubContext) {
 // ExitValue is called when production value is exited.
 func (listen *MyViewSQLListener) ExitAddOrSub(ctx *parser.AddOrSubContext) {
 	//fmt.Println("[Listen]Exit AddOrSub")
-	right, left := listen.currentMath.Stack.Pop(), listen.currentMath.Stack.Pop()
+	/*right, left := listen.currentMath.Stack.Pop(), listen.currentMath.Stack.Pop()
 	if ctx.GetOpType().GetText() == "+" {
 		listen.currentMath.Stack.Push(&Add{Left: left, Right: right})
 	} else {
 		listen.currentMath.Stack.Push(&Sub{Left: left, Right: right})
 	}
+	*/
+	AddOrSubHelper(ctx, listen.currentMath)
 }
 
 /*
@@ -755,7 +760,7 @@ func (listen *MyViewSQLListener) ExitCount(ctx *parser.CountContext) {
 
 	asCount := AsCount{}
 	if nameable := ctx.Nameable(); nameable != nil {
-		asCount.Nameable = listen.MakeNameableFromContext(nameable)
+		asCount.Nameable = listen.FullMakeNameableFromContext(nameable)
 	} //else: '*'. Nothing needs to be done in this case.
 	asCount.Name = ctx.Name().STRING().GetText()
 	listen.SelectAsCount[asCount.Name] = asCount
@@ -783,24 +788,11 @@ func (listen *MyViewSQLListener) ExitCondition(ctx *parser.ConditionContext) {
 
 	cond := Condition{
 		Math:     listen.currentMath,
-		Nameable: listen.MakeNameableFromContext(ctx.Nameable()),
+		Nameable: listen.FullMakeNameableFromContext(ctx.Nameable()),
 	}
 	comp := ctx.Comp()
 	if opType := comp.GetOpType(); opType != nil {
-		switch opType.GetText() {
-		case "=":
-			cond.Op = EQUAL
-		case ">":
-			cond.Op = HIGHER
-		case "<":
-			cond.Op = LOWER
-		case ">=":
-			cond.Op = HIGHER_EQ
-		case "<=":
-			cond.Op = LOWER_EQ
-		default: //!=
-			cond.Op = NOT_EQ
-		}
+		cond.Op = StringOperatorToCondOp(opType)
 	} else { //function name
 		cond.Fun = MakeFunFromName(comp.Name().GetText())
 		cond.Op = FUNCTION
@@ -905,7 +897,7 @@ func (listen *MyViewSQLListener) ExitGroupby(ctx *parser.GroupbyContext) {
 	nameables := ctx.AllNameable()
 	listen.Keys = make([]Nameable, len(nameables))
 	for i, nameable := range nameables {
-		listen.Keys[i] = listen.MakeNameableFromContext(nameable)
+		listen.Keys[i] = listen.FullMakeNameableFromContext(nameable)
 	}
 }
 
@@ -929,7 +921,7 @@ func (listen *MyViewSQLListener) ExitOrderby(ctx *parser.OrderbyContext) {
 		if asc := sortOrder.ASC(); asc != nil {
 			isDesc = false
 		}
-		listen.Sorting[i] = Order{Nameable: listen.MakeNameableFromContext(nameable), IsDesc: isDesc}
+		listen.Sorting[i] = Order{Nameable: listen.FullMakeNameableFromContext(nameable), IsDesc: isDesc}
 	}
 }
 
@@ -969,12 +961,23 @@ func (listen *MyViewSQLListener) EnterStart(ctx *parser.StartContext) {
 // ExitStart is called when production start is exited.
 func (listen *MyViewSQLListener) ExitStart(ctx *parser.StartContext) {
 	//fmt.Println("[Listen]Exit Start")
+	fmt.Println("Finished processing view text")
+	fmt.Println("ID, Bucket, Mode:", listen.ID, listen.Bucket, listen.Mode)
+	fmt.Println("All select:", listen.AllSelect)
+	fmt.Println("Primary key:", listen.PrimaryKey)
+	fmt.Println("Containers:", listen.Containers)
+	fmt.Println("Where IDs, Where Fields, Where Parameters:", listen.WhereIDs,
+		listen.WhereFields, listen.WhereParameters)
+	fmt.Println("Conditions:", listen.Conditions)
+	fmt.Println("Keys (2nd group by):", listen.Keys)
+	fmt.Println("Sorting:", listen.Sorting)
+	fmt.Println("TopSize:", listen.TopSize)
 }
 
 //Helpers
 
 //Makes nameable if it doesn't already exist; otherwise returns existing instance
-func (listen *MyViewSQLListener) MakeNameableFromContext(ctx parser.INameableContext) Nameable {
+func (listen *MyViewSQLListener) FullMakeNameableFromContext(ctx parser.INameableContext) Nameable {
 	//ExitNameable already takes care of storing the IDs. So here we only need the "math" part
 	if name := ctx.Name(); name != nil {
 		text := name.STRING().GetText()
@@ -1266,21 +1269,109 @@ func (listen *MyViewSQLListener) ExitKey(ctx *parser.KeyContext) {
 //ANYTHING BELOW HERE SHOULD NOT BE NEEDED TO BE IMPLEMENTED
 
 // EnterValue is called when production value is entered.
-func (listen *MyViewSQLListener) EnterParentheses(ctx *parser.ParenthesesContext) {
-	//fmt.Println("[Listen]Entered Parentheses")
-}
+func (listen *MyViewSQLListener) EnterParentheses(ctx *parser.ParenthesesContext) {}
 
 // ExitValue is called when production value is exited.
-func (listen *MyViewSQLListener) ExitParentheses(ctx *parser.ParenthesesContext) {
-	//fmt.Println("[Listen]Exit Parentheses")
-}
+func (listen *MyViewSQLListener) ExitParentheses(ctx *parser.ParenthesesContext) {}
 
 // EnterAggrFunc is called when production aggrFunc is entered.
-func (listen *MyViewSQLListener) EnterAggrFunc(ctx *parser.AggrFuncContext) {
-	//fmt.Println("[Listen]Entered Aggr")
-}
+func (listen *MyViewSQLListener) EnterAggrFunc(ctx *parser.AggrFuncContext) {}
 
 // ExitAggrFunc is called when production aggrFunc is exited.
-func (listen *MyViewSQLListener) ExitAggrFunc(ctx *parser.AggrFuncContext) {
-	//fmt.Println("[Listen]Exit Aggr")
-}
+func (listen *MyViewSQLListener) ExitAggrFunc(ctx *parser.AggrFuncContext) {}
+
+// EnterKey is called when production key is entered.
+func (listen *MyViewSQLListener) EnterCheck(ctx *parser.CheckContext) {}
+
+// ExitKey is called when production key is exited.
+func (listen *MyViewSQLListener) ExitCheck(ctx *parser.CheckContext) {}
+
+// EnterForeignkey is called when production foreignkey is entered.
+func (listen *MyViewSQLListener) EnterForeignkey(ctx *parser.ForeignkeyContext) {}
+
+// ExitForeignkey is called when production foreignkey is exited.
+func (listen *MyViewSQLListener) ExitForeignkey(ctx *parser.ForeignkeyContext) {}
+
+// EnterPrimarykey is called when production primarykey is entered.
+func (listen *MyViewSQLListener) EnterPrimarykey(ctx *parser.PrimarykeyContext) {}
+
+// ExitPrimarykey is called when production primarykey is exited.
+func (listen *MyViewSQLListener) ExitPrimarykey(ctx *parser.PrimarykeyContext) {}
+
+// EnterConstraint is called when production constraint is entered.
+func (listen *MyViewSQLListener) EnterConstraint(ctx *parser.ConstraintContext) {}
+
+// ExitConstraint is called when production constraint is exited.
+func (listen *MyViewSQLListener) ExitConstraint(ctx *parser.ConstraintContext) {}
+
+// EnterColumns is called when production columns is entered.
+func (listen *MyViewSQLListener) EnterColumns(ctx *parser.ColumnsContext) {}
+
+// ExitColumns is called when production columns is exited.
+func (listen *MyViewSQLListener) ExitColumns(ctx *parser.ColumnsContext) {}
+
+// EnterCreatetable is called when production createtable is entered.
+func (listen *MyViewSQLListener) EnterCreatetable(ctx *parser.CreatetableContext) {}
+
+// ExitCreatetable is called when production createtable is exited.
+func (listen *MyViewSQLListener) ExitCreatetable(ctx *parser.CreatetableContext) {}
+
+// EnterCreateindex is called when production createindex is entered.
+func (listen *MyViewSQLListener) EnterCreateindex(ctx *parser.CreateindexContext) {}
+
+// ExitCreateindex is called when production createindex is exited.
+func (listen *MyViewSQLListener) ExitCreateindex(ctx *parser.CreateindexContext) {}
+
+// EnterDrop is called when production drop is entered.
+func (listen *MyViewSQLListener) EnterDrop(ctx *parser.DropContext) {}
+
+// ExitDrop is called when production drop is exited.
+func (listen *MyViewSQLListener) ExitDrop(ctx *parser.DropContext) {}
+
+// EnterDelete is called when production delete is entered.
+func (listen *MyViewSQLListener) EnterDelete(ctx *parser.DeleteContext) {}
+
+// ExitDelete is called when production delete is exited.
+func (listen *MyViewSQLListener) ExitDelete(ctx *parser.DeleteContext) {}
+
+// EnterSet is called when production set is entered.
+func (listen *MyViewSQLListener) EnterSet(ctx *parser.SetContext) {}
+
+// ExitSet is called when production set is exited.
+func (listen *MyViewSQLListener) ExitSet(ctx *parser.SetContext) {}
+
+// EnterUpdate is called when production update is entered.
+func (listen *MyViewSQLListener) EnterUpdate(ctx *parser.UpdateContext) {}
+
+// ExitUpdate is called when production update is exited.
+func (listen *MyViewSQLListener) ExitUpdate(ctx *parser.UpdateContext) {}
+
+// EnterValues is called when production values is entered.
+func (listen *MyViewSQLListener) EnterValues(ctx *parser.ValuesContext) {}
+
+// ExitValues is called when production values is exited.
+func (listen *MyViewSQLListener) ExitValues(ctx *parser.ValuesContext) {}
+
+// EnterColumnNames is called when production columnNames is entered.
+func (listen *MyViewSQLListener) EnterColumnNames(ctx *parser.ColumnNamesContext) {}
+
+// ExitColumnNames is called when production columnNames is exited.
+func (listen *MyViewSQLListener) ExitColumnNames(ctx *parser.ColumnNamesContext) {}
+
+// EnterQuery is called when production query is entered.
+func (listen *MyViewSQLListener) EnterQuery(ctx *parser.QueryContext) {}
+
+// ExitQuery is called when production query is exited.
+func (listen *MyViewSQLListener) ExitQuery(ctx *parser.QueryContext) {}
+
+// EnterStatement is called when production statement is entered.
+func (listen *MyViewSQLListener) EnterStatement(ctx *parser.StatementContext) {}
+
+// ExitStatement is called when production statement is exited.
+func (listen *MyViewSQLListener) ExitStatement(ctx *parser.StatementContext) {}
+
+// EnterInsert is called when production insert is entered.
+func (listen *MyViewSQLListener) EnterInsert(ctx *parser.InsertContext) {}
+
+// ExitInsert is called when production insert is exited.
+func (listen *MyViewSQLListener) ExitInsert(ctx *parser.InsertContext) {}

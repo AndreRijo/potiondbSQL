@@ -16,18 +16,18 @@ type ViewInfo struct {
 }
 
 const (
-	TOPK     = 1
-	TOPSUM   = 2
-	COUNTER  = 3
-	AVERAGE  = 4
-	REGISTER = 5
-	MAP      = 6
-	MAX_CRDT = 7
-	MIN_CRDT = 8
+	TOPK         = 1
+	TOPSUM       = 2
+	COUNTER_CRDT = 3
+	AVERAGE      = 4
+	REGISTER     = 5
+	MAP_CRDT     = 6
+	MAX_CRDT     = 7
+	MIN_CRDT     = 8
 )
 
 var (
-	CrdtTypeToString = []string{"UNDEFINED", "TOPK", "TOPSUM", "COUNTER", "AVERAGE", "REGISTER", "MAP", "MAX_CRDT", "MIN_CRDT"}
+	CrdtTypeToString = []string{"UNDEFINED", "TOPK", "TOPSUM", "COUNTER_CRDT", "AVERAGE", "REGISTER", "MAP_CRDT", "MAX_CRDT", "MIN_CRDT"}
 )
 
 type TopKType struct {
@@ -39,7 +39,7 @@ type TopKType struct {
 
 func (v *ViewInfo) PrepareInfo() {
 	viewType := v.GetViewType()
-	if viewType == MAP {
+	if viewType == MAP_CRDT {
 		v.makeViewMapFullType()
 	} else if viewType == TOPK || viewType == TOPSUM {
 		v.makeViewTopFullType()
@@ -71,10 +71,10 @@ func (v *ViewInfo) calculateViewType() int {
 		return TOPK
 	}
 	if v.Listen.NEntriesInSelect > 1 {
-		return MAP
+		return MAP_CRDT
 	}
 	if len(v.Listen.SelectAsCount) == 1 {
-		return COUNTER
+		return COUNTER_CRDT
 	}
 
 	if len(v.Listen.SelectAsAggregation) == 1 {
@@ -89,7 +89,7 @@ func (v *ViewInfo) calculateViewType() int {
 func (v *ViewInfo) AggrToCrdtType(aggrFunc AggrType) int {
 	switch aggrFunc {
 	case SUM:
-		return COUNTER
+		return COUNTER_CRDT
 	case AVG:
 		return AVERAGE
 	case MAX:
@@ -125,7 +125,7 @@ func (v *ViewInfo) makeViewMapFullType() {
 		v.MapType[id] = v.AggrToCrdtType(asAggregation.AggrFunc)
 	}
 	for id, _ := range v.Listen.SelectAsCount {
-		v.MapType[id] = COUNTER
+		v.MapType[id] = COUNTER_CRDT
 	}
 }
 

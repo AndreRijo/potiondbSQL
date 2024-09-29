@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"sqlToKeyValue/src/parser"
 )
 
 //TODO: If I forced a calculation of HasParameter() and then cached the result
@@ -1518,4 +1520,32 @@ func ValueToString(value interface{}) string {
 		return typedV.ToString()
 	}
 	return ""
+}
+
+/*****SQL -> Math conversion methods*****/
+
+func ValueHelper(ctx *parser.ValueContext, currentMath Math) {
+
+}
+
+func MinusHelper(ctx *parser.MinusContext, currentMath Math) {
+	currentMath.Stack.Push(&Minus{ToCalculate: currentMath.Stack.Pop()})
+}
+
+func AddOrSubHelper(ctx *parser.AddOrSubContext, currentMath Math) {
+	right, left := currentMath.Stack.Pop(), currentMath.Stack.Pop()
+	if ctx.GetOpType().GetText() == "+" {
+		currentMath.Stack.Push(&Add{Left: left, Right: right})
+	} else {
+		currentMath.Stack.Push(&Sub{Left: left, Right: right})
+	}
+}
+
+func MultOrDivHelper(ctx *parser.MultOrDivContext, currentMath Math) {
+	right, left := currentMath.Stack.Pop(), currentMath.Stack.Pop()
+	if ctx.GetOpType().GetText() == "*" {
+		currentMath.Stack.Push(&Mult{Left: left, Right: right})
+	} else {
+		currentMath.Stack.Push(&Div{Left: left, Right: right})
+	}
 }

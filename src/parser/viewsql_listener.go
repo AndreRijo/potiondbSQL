@@ -100,6 +100,54 @@ type ViewSQLListener interface {
 	// EnterView is called when entering the view production.
 	EnterView(c *ViewContext)
 
+	// EnterCheck is called when entering the check production.
+	EnterCheck(c *CheckContext)
+
+	// EnterForeignkey is called when entering the foreignkey production.
+	EnterForeignkey(c *ForeignkeyContext)
+
+	// EnterPrimarykey is called when entering the primarykey production.
+	EnterPrimarykey(c *PrimarykeyContext)
+
+	// EnterConstraint is called when entering the constraint production.
+	EnterConstraint(c *ConstraintContext)
+
+	// EnterColumns is called when entering the columns production.
+	EnterColumns(c *ColumnsContext)
+
+	// EnterCreatetable is called when entering the createtable production.
+	EnterCreatetable(c *CreatetableContext)
+
+	// EnterCreateindex is called when entering the createindex production.
+	EnterCreateindex(c *CreateindexContext)
+
+	// EnterDrop is called when entering the drop production.
+	EnterDrop(c *DropContext)
+
+	// EnterDelete is called when entering the delete production.
+	EnterDelete(c *DeleteContext)
+
+	// EnterSet is called when entering the set production.
+	EnterSet(c *SetContext)
+
+	// EnterUpdate is called when entering the update production.
+	EnterUpdate(c *UpdateContext)
+
+	// EnterValues is called when entering the values production.
+	EnterValues(c *ValuesContext)
+
+	// EnterColumnNames is called when entering the columnNames production.
+	EnterColumnNames(c *ColumnNamesContext)
+
+	// EnterInsert is called when entering the insert production.
+	EnterInsert(c *InsertContext)
+
+	// EnterQuery is called when entering the query production.
+	EnterQuery(c *QueryContext)
+
+	// EnterStatement is called when entering the statement production.
+	EnterStatement(c *StatementContext)
+
 	// EnterStart is called when entering the start production.
 	EnterStart(c *StartContext)
 
@@ -195,6 +243,54 @@ type ViewSQLListener interface {
 
 	// ExitView is called when exiting the view production.
 	ExitView(c *ViewContext)
+
+	// ExitCheck is called when exiting the check production.
+	ExitCheck(c *CheckContext)
+
+	// ExitForeignkey is called when exiting the foreignkey production.
+	ExitForeignkey(c *ForeignkeyContext)
+
+	// ExitPrimarykey is called when exiting the primarykey production.
+	ExitPrimarykey(c *PrimarykeyContext)
+
+	// ExitConstraint is called when exiting the constraint production.
+	ExitConstraint(c *ConstraintContext)
+
+	// ExitColumns is called when exiting the columns production.
+	ExitColumns(c *ColumnsContext)
+
+	// ExitCreatetable is called when exiting the createtable production.
+	ExitCreatetable(c *CreatetableContext)
+
+	// ExitCreateindex is called when exiting the createindex production.
+	ExitCreateindex(c *CreateindexContext)
+
+	// ExitDrop is called when exiting the drop production.
+	ExitDrop(c *DropContext)
+
+	// ExitDelete is called when exiting the delete production.
+	ExitDelete(c *DeleteContext)
+
+	// ExitSet is called when exiting the set production.
+	ExitSet(c *SetContext)
+
+	// ExitUpdate is called when exiting the update production.
+	ExitUpdate(c *UpdateContext)
+
+	// ExitValues is called when exiting the values production.
+	ExitValues(c *ValuesContext)
+
+	// ExitColumnNames is called when exiting the columnNames production.
+	ExitColumnNames(c *ColumnNamesContext)
+
+	// ExitInsert is called when exiting the insert production.
+	ExitInsert(c *InsertContext)
+
+	// ExitQuery is called when exiting the query production.
+	ExitQuery(c *QueryContext)
+
+	// ExitStatement is called when exiting the statement production.
+	ExitStatement(c *StatementContext)
 
 	// ExitStart is called when exiting the start production.
 	ExitStart(c *StartContext)

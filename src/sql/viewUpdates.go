@@ -1,11 +1,14 @@
 package sql
 
+//TODO: Uncomment this file and move it to some other project.
+/*
 import (
 	"fmt"
-	"potionDB/src/antidote"
-	"potionDB/src/crdt"
 	"strconv"
 	"strings"
+
+	"potionDB/potionDB/components"
+	"potionDB/crdt/crdt"
 )
 
 //Pre-condition: upd.UpdateArgs is an inbedded Map update
@@ -72,9 +75,9 @@ func (v *ViewInfo) handleNewObjEmbMap(objKey antidote.KeyParams, upd crdt.EmbMap
 	for i, viewKey := range viewKeys {
 		viewUpds[i] = crdt.UpdateObjectParams{KeyParams: antidote.KeyParams{Key: viewKey, Bucket: v.Listen.Bucket, CrdtType: }, UpdateArgs: &viewBaseUpd}
 	}*/
-	//TODO: Finish
-	//Note: Parameters are not present in select (even though they are in theory supported)
-}
+//TODO: Finish
+//Note: Parameters are not present in select (even though they are in theory supported)
+/*}
 
 //Assuming full object delete
 func (v *ViewInfo) handleRemObjEmbMap(objKey antidote.KeyParams, upd crdt.MapRemoveAll) {
@@ -227,3 +230,4 @@ func (v *ViewInfo) getIntSingleAggr(objValues map[string]interface{}) int64 {
 	}
 	return 0
 }
+*/

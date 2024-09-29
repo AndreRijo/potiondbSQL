@@ -1,9 +1,11 @@
 package sql
 
+//TODO: Uncomment this file and move it to some other project.
+/*
 import (
-	"potionDB/src/antidote"
-	"potionDB/src/crdt"
-	"potionDB/src/proto"
+	"potionDB/potionDB/components"
+	"potionDB/crdt/crdt"
+	"potionDB/crdt/proto"
 )
 
 //This file is mostly for testing purposes.
@@ -184,3 +186,4 @@ func (o Orders) GetKey() string {
 func (p PartSupp) GetKey() string {
 	return p.Partkey + "_" + p.Suppkey
 }
+*/
