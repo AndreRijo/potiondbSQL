@@ -32,7 +32,7 @@ type CounterField struct {
 	FieldName  string
 }
 
-//ExternalMap: each entry could be different views
+// ExternalMap: each entry could be different views
 type ExternalMap struct {
 	KeyField   string
 	ValueField View
@@ -60,7 +60,7 @@ type View interface {
 	//addView(view View)
 }
 
-//Pre: all fields must be filled up
+// Pre: all fields must be filled up
 func (v *ViewInfo) calculateViewType() {
 	finalType := ""
 	for _, key := range v.MapKeys {
@@ -165,9 +165,9 @@ func removeCommas(parts [][]string) {
 	}
 }
 
-//First pos: keyword. On multi-word keyword, second pos may also have keyword
-//Will order it as a normal query
-//Select -> From -> Where -> Group by -> Order by -> Limit
+// First pos: keyword. On multi-word keyword, second pos may also have keyword
+// Will order it as a normal query
+// Select -> From -> Where -> Group by -> Order by -> Limit
 func sortLines(toSort [][]string, origLines []string) {
 	keywordsToSearch := []string{"SELECT", "FROM", "WHERE", "GROUP", "ORDER", "LIMIT"}
 	//Put first words in capital
@@ -242,7 +242,7 @@ func (v *ViewInfo) processOrderBy(orderByLine []string) {
 	}
 }
 
-//Pre: all names must be longer than 2 letters
+// Pre: all names must be longer than 2 letters
 func (v *ViewInfo) processWhere(whereLine []string) {
 	//Here we only need to look for the upper case words
 	for _, word := range whereLine[1:] {

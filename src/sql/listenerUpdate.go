@@ -19,7 +19,7 @@ type ListenerUpdate struct {
 	currIndex   int
 }
 
-//TODO: This should be somewhere else
+// TODO: This should be somewhere else
 type SimpleCondition struct {
 	ColumnName string //Left side
 	Op         CondType
@@ -154,6 +154,9 @@ func (listen *ListenerUpdate) EnterView(ctx *parser.ViewContext) {}
 
 // EnterCheck is called when entering the check production.
 func (listen *ListenerUpdate) EnterCheck(ctx *parser.CheckContext) {}
+
+// EnterUnique is called when production unique is entered.
+func (listen *ListenerUpdate) EnterUnique(ctx *parser.UniqueContext) {}
 
 // EnterForeignkey is called when entering the foreignkey production.
 func (listen *ListenerUpdate) EnterForeignkey(ctx *parser.ForeignkeyContext) {}
@@ -336,6 +339,9 @@ func (listen *ListenerUpdate) ExitView(ctx *parser.ViewContext) {}
 
 // ExitCheck is called when exiting the check production.
 func (listen *ListenerUpdate) ExitCheck(ctx *parser.CheckContext) {}
+
+// ExitUnique is called when production unique is exited.
+func (listen *ListenerUpdate) ExitUnique(ctx *parser.UniqueContext) {}
 
 // ExitForeignkey is called when exiting the foreignkey production.
 func (listen *ListenerUpdate) ExitForeignkey(ctx *parser.ForeignkeyContext) {}

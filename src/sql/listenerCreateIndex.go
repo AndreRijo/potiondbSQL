@@ -131,6 +131,9 @@ func (listen *ListenerCreateIndex) EnterView(ctx *parser.ViewContext) {}
 // EnterCheck is called when entering the check production.
 func (listen *ListenerCreateIndex) EnterCheck(ctx *parser.CheckContext) {}
 
+// EnterUnique is called when production unique is entered.
+func (listen *ListenerCreateIndex) EnterUnique(ctx *parser.UniqueContext) {}
+
 // EnterForeignkey is called when entering the foreignkey production.
 func (listen *ListenerCreateIndex) EnterForeignkey(ctx *parser.ForeignkeyContext) {}
 
@@ -285,6 +288,9 @@ func (listen *ListenerCreateIndex) ExitView(ctx *parser.ViewContext) {}
 
 // ExitCheck is called when exiting the check production.
 func (listen *ListenerCreateIndex) ExitCheck(ctx *parser.CheckContext) {}
+
+// ExitUnique is called when production unique is exited.
+func (listen *ListenerCreateIndex) ExitUnique(ctx *parser.UniqueContext) {}
 
 // ExitForeignkey is called when exiting the foreignkey production.
 func (listen *ListenerCreateIndex) ExitForeignkey(ctx *parser.ForeignkeyContext) {}

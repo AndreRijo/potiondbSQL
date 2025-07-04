@@ -2,6 +2,7 @@ package sql
 
 import (
 	"fmt"
+	"potionDB/crdt/proto"
 	"strconv"
 	"strings"
 
@@ -10,7 +11,8 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
 
-type CTPolicy int
+type RowPolicy int
+type ColumnPolicy int
 type SQLDatatype int
 
 type Invariant interface {
@@ -18,6 +20,7 @@ type Invariant interface {
 }
 
 type PrimaryKey bool
+type Unique bool
 
 type ForeignKey struct {
 	ForeignTable  string
@@ -30,28 +33,82 @@ type CheckConstraint struct {
 }
 
 func (pk PrimaryKey) IsInvariant() bool      { return true }
+func (unique Unique) IsInvariant() bool      { return true }
 func (fk ForeignKey) IsInvariant() bool      { return true }
 func (cc CheckConstraint) IsInvariant() bool { return true }
 
 const (
-	AW, RW, LWW                                           CTPolicy    = 1, 2, 3
-	COUNTER, INTEGER, BOOLEAN, VARCHAR, DATE, UNSUPPORTED SQLDatatype = 1, 2, 3, 4, 5, 0
+	AW, RW, LWW_R, STRONG                                 RowPolicy    = 1, 2, 3, 4
+	LWW_C, MW, EW, DW, UNDEFINED_C                        ColumnPolicy = 1, 2, 3, 4, 0
+	COUNTER, INTEGER, BOOLEAN, VARCHAR, DATE, UNSUPPORTED SQLDatatype  = 1, 2, 3, 4, 5, 0
 )
 
 type ListenerCreateTable struct {
 	Parse *parser.ViewSQLParser
 
-	ConcurrencyPolicy CTPolicy
+	ConcurrencyPolicy RowPolicy
 	TableName         string
 	//Types             map[string]proto.CRDTType
 	//Defaults          map[string]crdt.UpdateArguments
-	Types      map[string]SQLDatatype
-	Defaults   map[string]string
-	Invariants map[string]Invariant
-	Columns    []string
+	Types       map[string]SQLDatatype
+	TypesPolicy map[string]ColumnPolicy
+	Defaults    map[string]string
+	Invariants  map[string]Invariant
+	Columns     []string
 
 	//Temporary/helper variables
 	currentVarName string
+}
+
+func (list ListenerCreateTable) ToProtobuf() (protobuf *proto.ApbTypedSQL) {
+	rowPolicy := proto.ROW_Policy(list.ConcurrencyPolicy)
+	createPB := &proto.ApbSQLCreateTable{
+		RowPolicy:   &rowPolicy,
+		Columns:     list.Columns,
+		Datatypes:   make([]proto.SQL_Datatype, len(list.Columns)),
+		ColPolicies: make([]proto.COL_Policy, len(list.Columns)),
+		Defaults:    make([]string, len(list.Columns)),
+		Invariants:  make([]*proto.ApbSQLInvariant, len(list.Columns)),
+	}
+
+	for i, column := range list.Columns { //TODO: Consider changing this to being slices instead of maps!!!
+		//createPB.Columns[i] = column
+		createPB.Datatypes[i], createPB.ColPolicies[i] = proto.SQL_Datatype(list.Types[column]), proto.COL_Policy(list.TypesPolicy[column])
+		if defaultV, has := list.Defaults[column]; has {
+			createPB.Defaults[i] = defaultV
+		}
+		if inv, has := list.Invariants[column]; has {
+			createPB.Invariants[i] = MakeApbSQLInvariantProto(inv)
+		}
+	}
+	return &proto.ApbTypedSQL{TableName: &list.TableName, Type: proto.SQL_Type_CREATE_TABLE.Enum(), CreateTable: createPB}
+}
+
+func (list ListenerCreateTable) FromProtobuf(protobuf *proto.ApbTypedSQL) ProtoListener { //TODO: Do we need a parser here? I think not.
+	createProto := protobuf.GetCreateTable()
+	protoColumns := createProto.GetColumns()
+	list = ListenerCreateTable{
+		ConcurrencyPolicy: RowPolicy(createProto.GetRowPolicy()),
+		TableName:         protobuf.GetTableName(),
+		Types:             make(map[string]SQLDatatype),
+		TypesPolicy:       make(map[string]ColumnPolicy),
+		Defaults:          make(map[string]string),
+		Invariants:        make(map[string]Invariant),
+		Columns:           protoColumns,
+	}
+
+	protoTypes, protoPolicies, protoDefaults, protoInvs := createProto.GetDatatypes(), createProto.GetColPolicies(), createProto.GetDefaults(), createProto.GetInvariants()
+	for i, column := range protoColumns {
+		list.Types[column] = SQLDatatype(protoTypes[i]) //Always set for every column
+		list.TypesPolicy[column] = ColumnPolicy(protoPolicies[i])
+		if list.Defaults[column] != "" {
+			list.Defaults[column] = protoDefaults[i]
+		}
+		if list.Invariants[column] != nil {
+			list.Invariants[column] = MakeSQLInvariantFromProto(protoInvs[i])
+		}
+	}
+	return &list
 }
 
 func MakeCreateTableListener(parse *parser.ViewSQLParser) *ListenerCreateTable {
@@ -192,6 +249,11 @@ func (listen *ListenerCreateTable) EnterCheck(ctx *parser.CheckContext) {
 	//listen.Types[listen.currentVarName] = proto.CRDTType_FATCOUNTER //Update to bounded counter
 }
 
+// EnterUnique is called when production unique is entered.
+func (listen *ListenerCreateTable) EnterUnique(ctx *parser.UniqueContext) {
+	listen.Invariants[listen.currentVarName] = Unique(true)
+}
+
 // EnterForeignkey is called when entering the foreignkey production.
 func (listen *ListenerCreateTable) EnterForeignkey(ctx *parser.ForeignkeyContext) {
 	listen.Invariants[listen.currentVarName] = ForeignKey{ForeignTable: ctx.GetTableName().GetText(), ForeignColumn: ctx.GetColumnName().GetText()}
@@ -219,6 +281,15 @@ func (listen *ListenerCreateTable) EnterColumns(ctx *parser.ColumnsContext) {
 	listen.Types[listen.currentVarName] = sqlType
 	fmt.Println("[CreateTableL]SQLType:", sqlType)
 
+	policy := ParsedColPolicyToSQLColPolicy(ctx.GetPolicy().GetText())
+	if policy != UNDEFINED_C {
+		listen.TypesPolicy[listen.currentVarName] = policy
+		fmt.Println("[CreateTableL]Column policy:", policy)
+	} else {
+		listen.TypesPolicy[listen.currentVarName] = LWW_C //Default policy. If the CRDT type does not require policy, this is ignored.
+		fmt.Println("[CreateTableL]Column policy (default):", policy)
+	}
+
 	fmt.Println("[CreateTableL]Constant:", ctx.Constant())
 	if defaultValue := ctx.Constant(); defaultValue != nil {
 		//listen.Defaults[listen.currentVarName] = SQLUpdateToCRDTUpdate(dataTypeString, defaultValue)
@@ -241,7 +312,9 @@ func (listen *ListenerCreateTable) EnterCreatetable(ctx *parser.CreatetableConte
 	case "RW":
 		listen.ConcurrencyPolicy = RW
 	case "LWW":
-		listen.ConcurrencyPolicy = LWW
+		listen.ConcurrencyPolicy = LWW_R
+	default:
+		listen.ConcurrencyPolicy = STRONG
 	}
 }
 
@@ -380,6 +453,9 @@ func (listen *ListenerCreateTable) ExitView(ctx *parser.ViewContext) {}
 // ExitCheck is called when exiting the check production.
 func (listen *ListenerCreateTable) ExitCheck(ctx *parser.CheckContext) {}
 
+// ExitUnique is called when production unique is exited.
+func (listen *ListenerCreateTable) ExitUnique(ctx *parser.UniqueContext) {}
+
 // ExitForeignkey is called when exiting the foreignkey production.
 func (listen *ListenerCreateTable) ExitForeignkey(ctx *parser.ForeignkeyContext) {}
 
@@ -428,6 +504,7 @@ func (listen *ListenerCreateTable) ExitStart(ctx *parser.StartContext) {
 	fmt.Println("Concurrency policy:", listen.ConcurrencyPolicy)
 	fmt.Println("TableName:", listen.TableName)
 	fmt.Println("Types:", listen.Types)
+	fmt.Println("TypesPolicy:", listen.TypesPolicy)
 	fmt.Println("Defaults:", listen.Defaults)
 	fmt.Println("Invariants:", listen.Invariants)
 }

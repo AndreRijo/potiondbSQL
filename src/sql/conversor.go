@@ -1,12 +1,15 @@
 package sql
 
 import (
+	"potionDB/crdt/proto"
 	"strconv"
 	"strings"
 
 	"sqlToKeyValue/src/parser"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+
+	pb "google.golang.org/protobuf/proto"
 )
 
 //Contains auxiliary methods to convert from SQL to CRDTs
@@ -55,6 +58,20 @@ func SQLUpdateToCRDTUpdate(dataTypeString string, sqlValue parser.IConstantConte
 	}
 	return nil
 }*/
+
+func ParsedColPolicyToSQLColPolicy(colPolicy string) ColumnPolicy {
+	switch colPolicy {
+	case "LWW":
+		return LWW_C
+	case "MW":
+		return MW
+	case "EW":
+		return EW
+	case "DW":
+		return DW
+	}
+	return UNDEFINED_C
+}
 
 func ParsedTypeToSQLDatatype(dataTypeString string) SQLDatatype {
 	switch dataTypeString {
@@ -178,3 +195,44 @@ func SQLStringToListener(sqlCode string) (listener parser.ViewSQLListener) {
 	}
 	return nil
 }
+
+func MakeApbSQLInvariantProto(inv Invariant) (invProto *proto.ApbSQLInvariant) {
+	switch typedInv := inv.(type) {
+	case PrimaryKey:
+		return &proto.ApbSQLInvariant{PrimaryKey: &proto.ApbSQLPrimaryKey{}}
+	case Unique:
+		return &proto.ApbSQLInvariant{Unique: &proto.ApbSQLPrimaryKey{}}
+	case ForeignKey:
+		return &proto.ApbSQLInvariant{ForeignKey: &proto.ApbSQLForeignKey{
+			ForeignTable: &typedInv.ForeignTable, ForeignColumn: &typedInv.ForeignColumn}}
+	case CheckConstraint:
+		condType := proto.COMPType(typedInv.ConditionType)
+		return &proto.ApbSQLInvariant{Check: &proto.ApbSQLCheck{Value: pb.Int32(int32(typedInv.Value)), ConditionType: &condType}}
+	}
+	return nil
+}
+
+func MakeSQLInvariantFromProto(invProto *proto.ApbSQLInvariant) Invariant {
+	if invProto.PrimaryKey != nil {
+		return PrimaryKey(true)
+	} else if invProto.Unique != nil {
+		return Unique(true)
+	} else if invProto.ForeignKey != nil {
+		return ForeignKey{ForeignTable: *invProto.ForeignKey.ForeignTable, ForeignColumn: *invProto.ForeignKey.ForeignColumn}
+	} else if invProto.Check != nil {
+		return CheckConstraint{ConditionType: CondType(*invProto.Check.ConditionType), Value: int(*invProto.Check.Value)}
+	}
+	return nil
+}
+
+/*type PrimaryKey bool
+
+type ForeignKey struct {
+	ForeignTable  string
+	ForeignColumn string
+}
+
+type CheckConstraint struct {
+	ConditionType CondType
+	Value         int
+}*/

@@ -139,6 +139,9 @@ func (listen *ListenerDelete) EnterView(ctx *parser.ViewContext) {}
 // EnterCheck is called when entering the check production.
 func (listen *ListenerDelete) EnterCheck(ctx *parser.CheckContext) {}
 
+// EnterUnique is called when production unique is entered.
+func (listen *ListenerDelete) EnterUnique(ctx *parser.UniqueContext) {}
+
 // EnterForeignkey is called when entering the foreignkey production.
 func (listen *ListenerDelete) EnterForeignkey(ctx *parser.ForeignkeyContext) {}
 
@@ -314,6 +317,9 @@ func (listen *ListenerDelete) ExitView(ctx *parser.ViewContext) {}
 
 // ExitCheck is called when exiting the check production.
 func (listen *ListenerDelete) ExitCheck(ctx *parser.CheckContext) {}
+
+// ExitUnique is called when production unique is exited.
+func (listen *ListenerDelete) ExitUnique(ctx *parser.UniqueContext) {}
 
 // ExitForeignkey is called when exiting the foreignkey production.
 func (listen *ListenerDelete) ExitForeignkey(ctx *parser.ForeignkeyContext) {}

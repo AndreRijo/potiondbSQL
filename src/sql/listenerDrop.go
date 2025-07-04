@@ -134,6 +134,9 @@ func (listen *ListenerDropTable) EnterView(ctx *parser.ViewContext) {}
 // EnterCheck is called when entering the check production.
 func (listen *ListenerDropTable) EnterCheck(ctx *parser.CheckContext) {}
 
+// EnterUnique is called when production unique is entered.
+func (listen *ListenerDropTable) EnterUnique(ctx *parser.UniqueContext) {}
+
 // EnterForeignkey is called when entering the foreignkey production.
 func (listen *ListenerDropTable) EnterForeignkey(ctx *parser.ForeignkeyContext) {}
 
@@ -283,6 +286,9 @@ func (listen *ListenerDropTable) ExitView(ctx *parser.ViewContext) {}
 
 // ExitCheck is called when exiting the check production.
 func (listen *ListenerDropTable) ExitCheck(ctx *parser.CheckContext) {}
+
+// ExitUnique is called when production unique is exited.
+func (listen *ListenerDropTable) ExitUnique(ctx *parser.UniqueContext) {}
 
 // ExitForeignkey is called when exiting the foreignkey production.
 func (listen *ListenerDropTable) ExitForeignkey(ctx *parser.ForeignkeyContext) {}

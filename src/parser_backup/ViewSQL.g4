@@ -51,7 +51,6 @@ WITH: 'WITH';
 IN: 'IN';
 PRIMARY: 'PRIMARY';
 KEY: 'KEY';
-UNIQUE: 'UNIQUE';
 
 TABLE: 'TABLE';
 INDEX: 'INDEX';
@@ -188,13 +187,11 @@ view: create with? 'AS' select from where? firstGroupBy=groupby? secondGroupBy=g
 
 check: 'CHECK' type=('>' | '<' | '>=' | '<=') constant;
 
-unique: 'UNIQUE';
-
 foreignkey: 'FOREIGN' 'KEY' 'REFERENCES' tableName=name '('columnName=name')';
 
 primarykey: 'PRIMARY' 'KEY';
 
-constraint: primarykey | foreignkey | unique | check;
+constraint: primarykey | foreignkey | check;
 
 columns: STRING type=(COUNTER|INTEGER|BOOLEAN|VARCHAR|DATE_TYPE) policy=(LWW|MW|EW|DW) ('DEFAULT' constant)? constraint?;
 

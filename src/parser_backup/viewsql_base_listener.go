@@ -212,12 +212,6 @@ func (s *BaseViewSQLListener) EnterCheck(ctx *CheckContext) {}
 // ExitCheck is called when production check is exited.
 func (s *BaseViewSQLListener) ExitCheck(ctx *CheckContext) {}
 
-// EnterUnique is called when production unique is entered.
-func (s *BaseViewSQLListener) EnterUnique(ctx *UniqueContext) {}
-
-// ExitUnique is called when production unique is exited.
-func (s *BaseViewSQLListener) ExitUnique(ctx *UniqueContext) {}
-
 // EnterForeignkey is called when production foreignkey is entered.
 func (s *BaseViewSQLListener) EnterForeignkey(ctx *ForeignkeyContext) {}
 

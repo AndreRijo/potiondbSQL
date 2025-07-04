@@ -103,9 +103,6 @@ type ViewSQLListener interface {
 	// EnterCheck is called when entering the check production.
 	EnterCheck(c *CheckContext)
 
-	// EnterUnique is called when entering the unique production.
-	EnterUnique(c *UniqueContext)
-
 	// EnterForeignkey is called when entering the foreignkey production.
 	EnterForeignkey(c *ForeignkeyContext)
 
@@ -249,9 +246,6 @@ type ViewSQLListener interface {
 
 	// ExitCheck is called when exiting the check production.
 	ExitCheck(c *CheckContext)
-
-	// ExitUnique is called when exiting the unique production.
-	ExitUnique(c *UniqueContext)
 
 	// ExitForeignkey is called when exiting the foreignkey production.
 	ExitForeignkey(c *ForeignkeyContext)

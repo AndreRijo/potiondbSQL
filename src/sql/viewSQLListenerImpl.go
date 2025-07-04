@@ -976,7 +976,7 @@ func (listen *MyViewSQLListener) ExitStart(ctx *parser.StartContext) {
 
 //Helpers
 
-//Makes nameable if it doesn't already exist; otherwise returns existing instance
+// Makes nameable if it doesn't already exist; otherwise returns existing instance
 func (listen *MyViewSQLListener) FullMakeNameableFromContext(ctx parser.INameableContext) Nameable {
 	//ExitNameable already takes care of storing the IDs. So here we only need the "math" part
 	if name := ctx.Name(); name != nil {
@@ -1092,42 +1092,42 @@ func (listen *MyViewSQLListener) ExitCalc(ctx *parser.CalcContext) {
 	listen.AllSelect[field.GetIdentifier()] = field
 }
 
-//EnterContinuousRange is called when production continuousRange is entered.
+// EnterContinuousRange is called when production continuousRange is entered.
 func (listen *MyViewSQLListener) EnterContinuousRange(ctx *parser.ContinuousRangeContext) {
 
 }
 
-//ExitContinuousRange is called when production continuousRange is exited.
+// ExitContinuousRange is called when production continuousRange is exited.
 func (listen *MyViewSQLListener) ExitContinuousRange(ctx *parser.ContinuousRangeContext) {
 
 }
 
-//EnterSparseRange is called when production sparseRange is entered.
+// EnterSparseRange is called when production sparseRange is entered.
 func (listen *MyViewSQLListener) EnterSparseRange(ctx *parser.SparseRangeContext) {
 
 }
 
-//ExitSparseRange is called when production sparseRange is exited.
+// ExitSparseRange is called when production sparseRange is exited.
 func (listen *MyViewSQLListener) ExitSparseRange(ctx *parser.SparseRangeContext) {
 
 }
 
-//EnterRange is called when production range is entered.
+// EnterRange is called when production range is entered.
 func (listen *MyViewSQLListener) EnterRange(ctx *parser.RangeContext) {
 
 }
 
-//ExitRange is called when production range is exited.
+// ExitRange is called when production range is exited.
 func (listen *MyViewSQLListener) ExitRange(ctx *parser.RangeContext) {
 
 }
 
-//EnterWith is called when production with is entered.
+// EnterWith is called when production with is entered.
 func (listen *MyViewSQLListener) EnterWith(ctx *parser.WithContext) {
 
 }
 
-//ExitWith is called when production with is exited.
+// ExitWith is called when production with is exited.
 func (listen *MyViewSQLListener) ExitWith(ctx *parser.WithContext) {
 	paramsNames, ranges := ctx.AllSTRING(), ctx.AllRange_()
 	for i, name := range paramsNames {
@@ -1256,12 +1256,12 @@ func (listen *MyViewSQLListener) ExitWith(ctx *parser.WithContext) {
 	}
 }
 
-//EnterKey is called when production key is entered.
+// EnterKey is called when production key is entered.
 func (listen *MyViewSQLListener) EnterKey(ctx *parser.KeyContext) {
 
 }
 
-//ExitKey is called when production key is exited.
+// ExitKey is called when production key is exited.
 func (listen *MyViewSQLListener) ExitKey(ctx *parser.KeyContext) {
 	listen.PrimaryKey = &Name{Name: ctx.Nameable().Name().GetText()}
 }
@@ -1285,6 +1285,12 @@ func (listen *MyViewSQLListener) EnterCheck(ctx *parser.CheckContext) {}
 
 // ExitKey is called when production key is exited.
 func (listen *MyViewSQLListener) ExitCheck(ctx *parser.CheckContext) {}
+
+// EnterKey is called when production key is entered.
+func (listen *MyViewSQLListener) EnterUnique(ctx *parser.UniqueContext) {}
+
+// ExitKey is called when production key is exited.
+func (listen *MyViewSQLListener) ExitUnique(ctx *parser.UniqueContext) {}
 
 // EnterForeignkey is called when production foreignkey is entered.
 func (listen *MyViewSQLListener) EnterForeignkey(ctx *parser.ForeignkeyContext) {}
